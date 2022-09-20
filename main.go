@@ -2,12 +2,13 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/PauloLeal/mac-android-handoff-server/clipboard"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -16,30 +17,41 @@ var (
 	text       = kingpin.Flag("text", "Text to copy").String()
 )
 
+func initializeLogs() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.DebugLevel)
+}
+
 func main() {
 	kingpin.Parse()
 
+	initializeLogs()
+
 	if *targetFile != "" {
-		fmt.Println(*targetFile)
+		logrus.Debugln(*targetFile)
 		f, err := os.Open(*targetFile)
-		defer f.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer f.Close()
 
 		b, err := io.ReadAll(bufio.NewReader(f))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = clipboard.AddToClipboard(b)
+		fileName := filepath.Base(f.Name())
+		err = clipboard.AddToClipboard(b, fileName)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	if *text != "" {
-		err := clipboard.AddToClipboard([]byte(*text))
+		err := clipboard.AddToClipboard([]byte(*text), "")
 		if err != nil {
 			log.Fatal(err)
 		}

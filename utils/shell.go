@@ -2,11 +2,12 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
 )
 
 func runScript(command string, script string, args ...string) error {
@@ -27,7 +28,7 @@ func runScript(command string, script string, args ...string) error {
 	newArgs = append(newArgs, args...)
 
 	cmd := exec.Command(command, newArgs...)
-	fmt.Println(cmd.String())
+	logrus.Debugln(cmd.String())
 	err = cmd.Run()
 	if err != nil {
 		return err

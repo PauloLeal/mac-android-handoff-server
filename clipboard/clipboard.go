@@ -1,15 +1,16 @@
 package clipboard
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"mime"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/PauloLeal/mac-android-handoff-server/utils"
+	"github.com/sirupsen/logrus"
 )
 
 const copyFileScript = `#!/usr/bin/osascript
@@ -18,15 +19,39 @@ const copyFileScript = `#!/usr/bin/osascript
 end
 `
 
-func AddToClipboard(data []byte) error {
+var baseTempDir string
+
+func init() {
+	d, err := os.MkdirTemp("/tmp/", "mac-android-handoff-")
+	if err != nil {
+		log.Panic("Unable to create temp dir")
+	}
+	baseTempDir = d
+	cleanup()
+}
+
+func cleanup() {
+	go func() {
+
+	}()
+}
+
+func AddToClipboard(data []byte, name string) error {
 	fileType := http.DetectContentType(data)
 
-	if strings.HasPrefix(fileType, "image/") {
-		exts, err := mime.ExtensionsByType(fileType)
+	logrus.Debugln(fileType)
+	if strings.HasPrefix(fileType, "text/plain") {
+		script := fmt.Sprintf("#/bin/sh\necho \"%s\" | /usr/bin/pbcopy", string(data))
+		err := utils.RunShellScript(script)
 		if err != nil {
 			return err
 		}
-		f, err := ioutil.TempFile("/tmp/", fmt.Sprintf("android-handoff*%s", exts[0]))
+	} else {
+		if len(name) == 0 {
+			return errors.New("name required")
+		}
+
+		f, err := os.Create(fmt.Sprintf("%s/%s", baseTempDir, name))
 		if err != nil {
 			return err
 		}
@@ -37,16 +62,9 @@ func AddToClipboard(data []byte) error {
 		if err != nil {
 			return err
 		}
-		defer os.Remove(path)
 
 		script := copyFileScript
 		err = utils.RunOsaScript(script, path)
-		if err != nil {
-			return err
-		}
-	} else {
-		script := fmt.Sprintf("#/bin/sh\necho \"%s\" | /usr/bin/pbcopy", string(data))
-		err := utils.RunShellScript(script)
 		if err != nil {
 			return err
 		}
