@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -36,6 +37,7 @@ func AddToClipboard(data []byte) error {
 		if err != nil {
 			return err
 		}
+		defer os.Remove(path)
 
 		script := copyFileScript
 		err = utils.RunOsaScript(script, path)

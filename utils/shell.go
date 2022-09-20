@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 )
@@ -20,7 +21,7 @@ func runScript(command string, script string, args ...string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(path)
+	defer os.Remove(path)
 
 	newArgs := append([]string{}, path)
 	newArgs = append(newArgs, args...)
