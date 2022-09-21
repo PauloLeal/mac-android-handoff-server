@@ -13,11 +13,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const copyTextScript = `#!/usr/bin/osascript
+on run args
+	set the clipboard to (first item of args)
+end
+`
+
 const copyFileScript = `#!/usr/bin/osascript
 	on run args
 		set the clipboard to POSIX file (first item of args)
 end
 `
+
+const pasteFileScript = `#!/usr/bin/osascript
+on run args
+        tell application "System Events" to write (the clipboard as «class furl») to POSIX file (first item of args)
+end
+`
+
+// write (the clipboard to POSIX file (first item of args))
 
 var baseTempDir string
 
@@ -41,8 +55,7 @@ func AddToClipboard(data []byte, name string) error {
 
 	logrus.Debugln(fileType)
 	if strings.HasPrefix(fileType, "text/plain") {
-		script := fmt.Sprintf("#/bin/sh\necho \"%s\" | /usr/bin/pbcopy", string(data))
-		err := utils.RunShellScript(script)
+		err := utils.RunOsaScript(copyTextScript, string(data))
 		if err != nil {
 			return err
 		}
@@ -63,12 +76,18 @@ func AddToClipboard(data []byte, name string) error {
 			return err
 		}
 
-		script := copyFileScript
-		err = utils.RunOsaScript(script, path)
+		err = utils.RunOsaScript(copyFileScript, path)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func ReadFromClipboard() ([]byte, error) {
+	f, _ := os.CreateTemp(baseTempDir, "pasted-")
+	logrus.Debugln(f.Name())
+	utils.RunOsaScript(pasteFileScript, f.Name())
+	return nil, nil
 }

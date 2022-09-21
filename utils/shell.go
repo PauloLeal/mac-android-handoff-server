@@ -10,6 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func shouldDeleteFiles() bool {
+	return os.Getenv("ANDROID_HANDOFF_DELETE_FILES") == ""
+}
+
 func runScript(command string, script string, args ...string) error {
 	f, err := ioutil.TempFile("/tmp/", "android-handoff")
 	if err != nil {
@@ -22,7 +26,11 @@ func runScript(command string, script string, args ...string) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(path)
+	defer func() {
+		if shouldDeleteFiles() {
+			os.Remove(path)
+		}
+	}()
 
 	newArgs := append([]string{}, path)
 	newArgs = append(newArgs, args...)

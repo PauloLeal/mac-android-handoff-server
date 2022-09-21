@@ -15,6 +15,7 @@ import (
 var (
 	targetFile = kingpin.Flag("file", "File to copy").Short('f').String()
 	text       = kingpin.Flag("text", "Text to copy").String()
+	paste      = kingpin.Flag("paste", "paste from clipboard").Short('p').Bool()
 )
 
 func initializeLogs() {
@@ -29,6 +30,10 @@ func main() {
 	kingpin.Parse()
 
 	initializeLogs()
+
+	if *paste {
+		clipboard.ReadFromClipboard()
+	}
 
 	if *targetFile != "" {
 		logrus.Debugln(*targetFile)
